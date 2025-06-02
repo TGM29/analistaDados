@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
-import { CssBaseline, Container, Box, Typography, Button, TextField, Paper, AppBar, Toolbar } from '@mui/material';
-import { register, login, uploadCSV, fetchData } from './api';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React from 'react';
+import { CssBaseline, AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import UploadPage from './views/UploadPage';
+import ChartsPage from './views/ChartsPage';
 
-function AuthForm({ onAuth }: { onAuth: (token: string) => void }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
-  const [error, setError] = useState('');
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('token');
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    if (!token) navigate('/login');
+  }, [token, navigate]);
+  return <>{children}</>;
+}
+
+function LoginPage({ onAuth }: { onAuth: (token: string) => void }) {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [isLogin, setIsLogin] = React.useState(true);
+  const [error, setError] = React.useState('');
+  const navigate = useNavigate();
+  const { register, login } = require('./api');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,6 +28,7 @@ function AuthForm({ onAuth }: { onAuth: (token: string) => void }) {
       if (isLogin) {
         const res = await login(email, password);
         onAuth(res.data.token);
+        navigate('/upload');
       } else {
         await register(email, password);
         setIsLogin(true);
@@ -26,81 +39,23 @@ function AuthForm({ onAuth }: { onAuth: (token: string) => void }) {
   };
 
   return (
-    <Paper sx={{ p: 3, maxWidth: 400, mx: 'auto', mt: 8 }}>
-      <Typography variant="h5" gutterBottom>{isLogin ? 'Login' : 'Cadastro'}</Typography>
-      <form onSubmit={handleSubmit}>
-        <TextField label="Email" fullWidth margin="normal" value={email} onChange={e => setEmail(e.target.value)} />
-        <TextField label="Senha" type="password" fullWidth margin="normal" value={password} onChange={e => setPassword(e.target.value)} />
+    <Container maxWidth="sm">
+      <form onSubmit={handleSubmit} style={{ marginTop: 64 }}>
+        <Typography variant="h5" gutterBottom>{isLogin ? 'Login' : 'Cadastro'}</Typography>
+        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', marginBottom: 16, padding: 8 }} />
+        <input type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', marginBottom: 16, padding: 8 }} />
         {error && <Typography color="error">{error}</Typography>}
         <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>{isLogin ? 'Entrar' : 'Cadastrar'}</Button>
       </form>
       <Button onClick={() => setIsLogin(!isLogin)} sx={{ mt: 2 }}>
         {isLogin ? 'Criar conta' : 'Já tem conta? Entrar'}
       </Button>
-    </Paper>
-  );
-}
-
-function UploadForm({ token, onUpload }: { token: string, onUpload: () => void }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [msg, setMsg] = useState('');
-  const handleUpload = async () => {
-    if (!file) return;
-    setMsg('');
-    try {
-      await uploadCSV(file, token);
-      setMsg('Upload realizado!');
-      onUpload();
-    } catch {
-      setMsg('Erro no upload');
-    }
-  };
-  return (
-    <Paper sx={{ p: 3, maxWidth: 400, mx: 'auto', mt: 4 }}>
-      <input type="file" accept=".csv" onChange={e => setFile(e.target.files?.[0] || null)} />
-      <Button variant="contained" onClick={handleUpload} sx={{ mt: 2 }} disabled={!file}>Enviar CSV</Button>
-      {msg && <Typography>{msg}</Typography>}
-    </Paper>
-  );
-}
-
-function DataCharts({ token }: { token: string }) {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  React.useEffect(() => {
-    setLoading(true);
-    fetchData(token).then(res => {
-      setData(res.data);
-      setLoading(false);
-    });
-  }, [token]);
-  if (loading) return <Typography>Carregando dados...</Typography>;
-  if (!data.length) return <Typography>Nenhum dado encontrado.</Typography>;
-  return (
-    <Box sx={{ mt: 4 }}>
-      {data.map((file: any, idx: number) => (
-        <Paper key={idx} sx={{ p: 2, mb: 4 }}>
-          <Typography variant="h6">{file.file}</Typography>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={file.data}>
-              <XAxis dataKey={Object.keys(file.data[0])[0]} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              {Object.keys(file.data[0]).filter(k => k !== Object.keys(file.data[0])[0]).map((key, i) => (
-                <Bar dataKey={key} fill={['#1976d2', '#388e3c', '#fbc02d', '#d32f2f'][i % 4]} key={key} />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </Paper>
-      ))}
-    </Box>
+    </Container>
   );
 }
 
 function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [refresh, setRefresh] = useState(0);
+  const [token, setToken] = React.useState<string | null>(localStorage.getItem('token'));
   const handleAuth = (t: string) => {
     setToken(t);
     localStorage.setItem('token', t);
@@ -110,7 +65,7 @@ function App() {
     localStorage.removeItem('token');
   };
   return (
-    <>
+    <BrowserRouter>
       <CssBaseline />
       <AppBar position="static">
         <Toolbar>
@@ -118,17 +73,13 @@ function App() {
           {token && <Button color="inherit" onClick={handleLogout}>Sair</Button>}
         </Toolbar>
       </AppBar>
-      <Container>
-        {!token ? (
-          <AuthForm onAuth={handleAuth} />
-        ) : (
-          <>
-            <UploadForm token={token} onUpload={() => setRefresh(r => r + 1)} />
-            <DataCharts token={token} key={refresh} />
-          </>
-        )}
-      </Container>
-    </>
+      <Routes>
+        <Route path="/login" element={<LoginPage onAuth={handleAuth} />} />
+        <Route path="/upload" element={<AuthGuard><UploadPage /></AuthGuard>} />
+        <Route path="/graficos" element={<AuthGuard><ChartsPage /></AuthGuard>} />
+        <Route path="*" element={<Navigate to={token ? '/upload' : '/login'} />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
