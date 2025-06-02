@@ -1,6 +1,6 @@
 import { Env } from '../index';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 
 export async function handleAuth(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -20,7 +20,11 @@ export async function handleAuth(request: Request, env: Env): Promise<Response> 
     if (!user) return new Response('Invalid credentials', { status: 401 });
     const valid = await bcrypt.compare(password, user.senha_hash);
     if (!valid) return new Response('Invalid credentials', { status: 401 });
-    const token = jwt.sign({ userId: user.id, email }, env.JWT_SECRET, { expiresIn: '1d' });
+    const secret = new TextEncoder().encode(env.JWT_SECRET);
+    const token = await new SignJWT({ userId: user.id, email })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('1d')
+      .sign(secret);
     return new Response(JSON.stringify({ token }), {
       headers: { 'Content-Type': 'application/json' },
     });

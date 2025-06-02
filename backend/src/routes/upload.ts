@@ -1,5 +1,5 @@
 import { Env } from '../index';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 import { parse } from 'csv-parse/sync';
 
 async function getUserIdFromRequest(request: Request, env: Env): Promise<number | null> {
@@ -7,8 +7,9 @@ async function getUserIdFromRequest(request: Request, env: Env): Promise<number 
   if (!auth) return null;
   const token = auth.replace('Bearer ', '');
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as any;
-    return payload.userId;
+    const secret = new TextEncoder().encode(env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    return (payload as any).userId;
   } catch {
     return null;
   }

@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
+    "jose": "^5.3.0",
     "csv-parse": "^5.5.4"
   },
   "devDependencies": {
