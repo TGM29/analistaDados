@@ -1,0 +1,23 @@
+-- Usuários
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  senha_hash TEXT NOT NULL
+);
+
+-- Arquivos CSV
+CREATE TABLE IF NOT EXISTS csv_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  filename TEXT NOT NULL,
+  uploaded_at TEXT NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+-- Dados do CSV
+CREATE TABLE IF NOT EXISTS csv_data (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  file_id INTEGER NOT NULL,
+  row_data TEXT NOT NULL,
+  FOREIGN KEY(file_id) REFERENCES csv_files(id)
+);

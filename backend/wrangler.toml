@@ -1,0 +1,11 @@
+name = "analista-backend"
+type = "javascript"
+compatibility_date = "2024-05-01"
+main = "src/index.ts"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "analista-d1"
+
+[vars]
+JWT_SECRET = "troque-por-um-segredo-forte"

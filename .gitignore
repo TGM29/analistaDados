@@ -1,0 +1,14 @@
+# Node
+node_modules/
+.env
+.DS_Store
+dist/
+build/
+# Vite
+frontend/.vite
+# Cloudflare
+backend/.wrangler
+backend/.dev.vars
+backend/.dev.json
+# Logs
+*.log
