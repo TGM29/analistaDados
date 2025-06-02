@@ -1,6 +1,16 @@
 import { Env } from '../index';
 import { jwtVerify } from 'jose';
-import { parse } from 'csv-parse/sync';
+
+function parseCSV(text: string): any[] {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const values = line.split(',');
+    const obj: Record<string, string> = {};
+    headers.forEach((h, i) => { obj[h] = values[i]?.trim() ?? ''; });
+    return obj;
+  });
+}
 
 async function getUserIdFromRequest(request: Request, env: Env): Promise<number | null> {
   const auth = request.headers.get('authorization');
@@ -26,7 +36,7 @@ export async function handleUpload(request: Request, env: Env): Promise<Response
   const text = await file.text();
   let records;
   try {
-    records = parse(text, { columns: true });
+    records = parseCSV(text);
   } catch (e) {
     return new Response('Invalid CSV', { status: 400 });
   }
